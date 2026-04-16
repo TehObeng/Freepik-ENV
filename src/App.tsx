@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ApiKey, Endpoint, EndpointCategory } from './types';
+import { ApiKey, Endpoint, EndpointCategory, RequestHistoryItem } from './types';
 import { SEED_API_KEYS, SEED_ENDPOINTS } from './data/seed';
 import { KeyFormModal } from './components/KeyFormModal';
 import { EndpointRow } from './components/EndpointRow';
@@ -7,7 +7,15 @@ import { DashboardStats } from './components/DashboardStats';
 import { RequestPreview } from './components/RequestPreview';
 import { CompactKeyCard } from './components/CompactKeyCard';
 import { ModelPlayground } from './components/ModelPlayground';
-import { Plus, Info, AlertTriangle, ShieldCheck, Database, Server, Compass, CheckCircle2 } from 'lucide-react';
+import { Plus, Info, AlertTriangle, ShieldCheck, Database, Server, Compass, CheckCircle2, History } from 'lucide-react';
+import { getEndpointInputMode, getEndpointCapabilities, getEndpointOutputType, getEndpointFamily } from './config/endpointCapabilities';
+import { getEndpointConfig } from './config/endpointConfigs';
+import { 
+  PlaygroundFormState, 
+  getDefaultFormState,
+  buildPayloadFromForm
+} from './config/payloadBuilders';
+import { buildMockResponse, MockResponse } from './config/mockResponseFactory';
 
 export interface LogEntry {
   id: string;
@@ -18,7 +26,20 @@ export interface LogEntry {
 
 export default function App() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
-  const [endpoints] = useState<Endpoint[]>(SEED_ENDPOINTS);
+  const [endpoints] = useState<Endpoint[]>(() => {
+    return SEED_ENDPOINTS.map(ep => {
+      const inputMode = ep.inputMode || getEndpointInputMode(ep);
+      const family = ep.family || getEndpointFamily(ep);
+      return {
+        ...ep,
+        inputMode,
+        outputType: ep.outputType || getEndpointOutputType(ep),
+        family,
+        capabilities: ep.capabilities || getEndpointCapabilities(ep),
+        config: ep.config || getEndpointConfig(ep, inputMode, family)
+      };
+    });
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
@@ -28,10 +49,13 @@ export default function App() {
   
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedResult, setGeneratedResult] = useState<{ type: string, url: string } | null>(null);
+  const [generatedResult, setGeneratedResult] = useState<MockResponse | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: '1', timestamp: new Date().toLocaleTimeString(), level: 'info', message: 'System initialized.' }
   ]);
+  const [requestHistory, setRequestHistory] = useState<RequestHistoryItem[]>([]);
+  
+  const [formState, setFormState] = useState<PlaygroundFormState>({});
 
   // Load from localStorage or seed
   useEffect(() => {
@@ -43,9 +67,14 @@ export default function App() {
       localStorage.setItem('freepik_api_keys', JSON.stringify(SEED_API_KEYS));
     }
     
+    const storedHistory = localStorage.getItem('freepik_request_history');
+    if (storedHistory) {
+      setRequestHistory(JSON.parse(storedHistory));
+    }
+
     // Auto-select first endpoint
     if (SEED_ENDPOINTS.length > 0) {
-      setSelectedEndpointId(SEED_ENDPOINTS[0].id);
+      handleSelectEndpoint(SEED_ENDPOINTS[0].id);
     }
   }, []);
 
@@ -56,8 +85,19 @@ export default function App() {
     }
   }, [keys]);
 
+  useEffect(() => {
+    localStorage.setItem('freepik_request_history', JSON.stringify(requestHistory));
+  }, [requestHistory]);
+
   const selectedKey = useMemo(() => keys.find(k => k.selected) || null, [keys]);
-  const selectedEndpoint = useMemo(() => endpoints.find(e => e.id === selectedEndpointId) || null, [endpoints, selectedEndpointId]);
+  const selectedEndpoint = useMemo(() => {
+    return endpoints.find(e => e.id === selectedEndpointId) || null;
+  }, [endpoints, selectedEndpointId]);
+  
+  const currentPayload = useMemo(() => {
+    if (!selectedEndpoint) return {};
+    return buildPayloadFromForm(selectedEndpoint, formState);
+  }, [selectedEndpoint, formState]);
 
   const handleSaveKey = (keyData: Partial<ApiKey>) => {
     if (editingKey) {
@@ -120,8 +160,12 @@ export default function App() {
   const handleSelectEndpoint = (id: string) => {
     setSelectedEndpointId(id);
     setGeneratedResult(null); // Clear previous result when switching models
-    const endpointName = endpoints.find(e => e.id === id)?.name;
-    addLog('info', `Selected model endpoint: ${endpointName}`);
+    const endpoint = endpoints.find(e => e.id === id);
+    if (endpoint) {
+      addLog('info', `Selected model endpoint: ${endpoint.name}`);
+      // Reset form state based on capabilities
+      setFormState(getDefaultFormState(endpoint));
+    }
   };
 
   const handleGenerate = async () => {
@@ -138,6 +182,19 @@ export default function App() {
       return;
     }
 
+    // Validate required fields
+    const requiredFields = selectedEndpoint.config?.fields.filter(f => f.required) || [];
+    const missingFields = requiredFields.filter(f => {
+      if (f.type === 'file_placeholder') return false; // Skip file placeholders for mock validation
+      const val = formState[f.key];
+      return val === undefined || val === '' || val === null;
+    });
+    
+    if (missingFields.length > 0) {
+      addLog('error', `Generation failed: Missing required fields (${missingFields.map(f => f.label).join(', ')})`);
+      return;
+    }
+
     setIsGenerating(true);
     addLog('info', `Starting generation using ${selectedEndpoint.name}...`);
     
@@ -147,19 +204,33 @@ export default function App() {
       addLog('success', `Generation completed successfully! (-1 credit from ${selectedKey.name})`);
       
       // Generate mock result based on category
-      const type = selectedEndpoint.category;
+      const type = selectedEndpoint.outputType || 'json';
       let url = '';
       const randomSeed = Math.floor(Math.random() * 10000);
+      const taskId = `mock_task_${Math.random().toString(36).substring(7)}`;
       
-      if (type === 'image' || type === 'utility') {
-        url = `https://picsum.photos/seed/${randomSeed}/800/450`;
-      } else if (type === 'video') {
-        url = 'https://www.w3schools.com/html/mov_bbb.mp4';
-      } else if (type === 'audio') {
-        url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-      }
+      const mockResponse = buildMockResponse(selectedEndpoint, selectedKey.name, currentPayload, taskId);
+      setGeneratedResult(mockResponse);
       
-      setGeneratedResult({ type, url });
+      // Add to history
+      const newHistoryItem: RequestHistoryItem = {
+        id: taskId,
+        timestamp: new Date().toLocaleTimeString(),
+        endpointId: selectedEndpoint.id,
+        endpointName: selectedEndpoint.name,
+        path: selectedEndpoint.path,
+        category: selectedEndpoint.category,
+        inputMode: selectedEndpoint.inputMode,
+        outputType: selectedEndpoint.outputType,
+        family: selectedEndpoint.family,
+        keyName: selectedKey.name,
+        payload: currentPayload,
+        formState: formState,
+        status: 'COMPLETED',
+        mockOutputUrl: mockResponse.mock_output_url,
+        mockResult: mockResponse.mock_result
+      };
+      setRequestHistory(prev => [newHistoryItem, ...prev].slice(0, 50)); // keep last 50
       
       // Mock decrementing the key usage
       setKeys(keys.map(k => {
@@ -292,6 +363,14 @@ export default function App() {
             isGenerating={isGenerating}
             onGenerate={handleGenerate}
             generatedResult={generatedResult}
+            formState={formState}
+            setFormState={setFormState}
+            onReset={() => {
+              if (selectedEndpoint) {
+                setFormState(getDefaultFormState(selectedEndpoint));
+              }
+              setGeneratedResult(null);
+            }}
           />
         </section>
 
@@ -305,7 +384,64 @@ export default function App() {
               selectedKey={selectedKey}
               selectedEndpoint={selectedEndpoint}
               logs={logs}
+              payload={currentPayload}
             />
+            
+            {/* Request History */}
+            {requestHistory.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <History size={14} /> Request History
+                  </h3>
+                  <button 
+                    onClick={() => setRequestHistory([])}
+                    className="text-[0.65rem] text-slate-400 hover:text-slate-600"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                  {requestHistory.map(item => (
+                    <div 
+                      key={item.id} 
+                      className="bg-white border border-slate-200 rounded p-2 cursor-pointer hover:border-blue-300 transition-colors"
+                      onClick={() => {
+                        setSelectedEndpointId(item.endpointId);
+                        setFormState(item.formState);
+                        setGeneratedResult({
+                          request_id: item.id,
+                          endpoint_name: item.endpointName,
+                          endpoint_path: item.path || '',
+                          input_mode: item.inputMode,
+                          output_type: item.outputType,
+                          selected_key_name: item.keyName,
+                          status: item.status,
+                          submitted_at: item.timestamp,
+                          payload_snapshot: item.payload,
+                          mock_output_url: item.mockOutputUrl,
+                          mock_result: item.mockResult,
+                          credits_used: 1
+                        });
+                        addLog('info', `Restored request settings for ${item.endpointName}`);
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-xs font-semibold text-slate-800 truncate pr-2">{item.endpointName}</span>
+                        <span className="text-[0.6rem] text-slate-400 shrink-0">{item.timestamp}</span>
+                      </div>
+                      <div className="text-[0.65rem] text-slate-500 truncate mb-1">
+                        {item.payload.prompt || item.payload.text || item.payload.additional_prompt || 'No prompt'}
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[0.6rem] font-medium text-slate-400">{item.keyName}</span>
+                        <span className="text-[0.6rem] font-bold text-green-600">COMPLETED</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Coverage Card */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">

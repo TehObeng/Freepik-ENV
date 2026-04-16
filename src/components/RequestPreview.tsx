@@ -6,9 +6,10 @@ interface RequestPreviewProps {
   selectedKey: ApiKey | null;
   selectedEndpoint: Endpoint | null;
   logs: LogEntry[];
+  payload: any;
 }
 
-export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, selectedEndpoint, logs }) => {
+export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, selectedEndpoint, logs, payload }) => {
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
   const [copiedCurl, setCopiedCurl] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -28,13 +29,9 @@ export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, sel
   const isKeyUsable = selectedKey.status === 'active' || selectedKey.status === 'near_limit';
   const fullUrl = `https://api.freepik.com${selectedEndpoint.path}`;
   
-  const samplePayload = selectedEndpoint.category === 'image' 
-    ? `{\n  "prompt": "A professional 3D workspace with soft lighting, minimalist design, high resolution, 8k",\n  "negative_prompt": "blurry, low quality",\n  "guidance_scale": 7.5,\n  "aspect_ratio": "16:9",\n  "num_images": 1\n}`
-    : selectedEndpoint.category === 'video'
-    ? `{\n  "prompt": "A dog running in a green field",\n  "duration": 5\n}`
-    : `{\n  "text": "Hello world"\n}`;
+  const payloadString = JSON.stringify(payload, null, 2);
 
-  const curlCommand = `curl -X POST "${fullUrl}" \\\n  -H "x-freepik-api-key: ${selectedKey.apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '${samplePayload.replace(/\n/g, '')}'`;
+  const curlCommand = `curl -X POST "${fullUrl}" \\\n  -H "x-freepik-api-key: <YOUR_API_KEY>" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(payload)}'`;
 
   const handleCopy = (text: string, setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     navigator.clipboard.writeText(text);
@@ -56,12 +53,14 @@ export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, sel
     <div className="flex flex-col h-full">
       <div className="bg-[#f8fafc] border border-blue-200 text-blue-800 p-3 rounded-md text-[0.75rem] mb-4">
         <strong className="block mb-1 text-blue-900">Simulated Request Preview</strong>
-        This panel previews how a request may look, but does not send real Freepik API requests yet.
+        This panel previews how a request may look, but does not send real Freepik API requests yet. Payload preview is generated from the current visible fields.
       </div>
 
       <div className="bg-slate-100 rounded-lg p-4 mb-4">
         <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Target Endpoint</div>
-        <div className="text-[0.875rem] font-semibold text-slate-900 mb-3">{selectedEndpoint.name}</div>
+        <div className="text-[0.875rem] font-semibold text-slate-900 mb-1">{selectedEndpoint.name}</div>
+        <div className="text-[0.7rem] font-mono text-slate-500 mb-1">{selectedEndpoint.path}</div>
+        <div className="text-[0.7rem] text-slate-500 mb-3">{selectedEndpoint.note}</div>
         
         <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Authorized Key</div>
         <div className="text-[0.875rem] font-semibold text-slate-900 mb-3 flex items-center gap-2">
@@ -72,12 +71,54 @@ export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, sel
           {selectedKey.status === 'disabled' && <span className="text-[0.65rem] text-[#94a3b8]">● Disabled</span>}
         </div>
         
-        <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Category</div>
-        <div className="text-[0.875rem] font-semibold text-slate-900">
+        <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Category & Status</div>
+        <div className="text-[0.875rem] font-semibold text-slate-900 flex items-center gap-2 mb-3 flex-wrap">
           <span className={`px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide ${getCategoryColor()}`}>
             {selectedEndpoint.category}
           </span>
+          {selectedEndpoint.inputMode && (
+            <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide bg-slate-200 text-slate-700 border border-slate-300">
+              {selectedEndpoint.inputMode.replace('_', ' ')}
+            </span>
+          )}
+          {selectedEndpoint.family && selectedEndpoint.family !== 'unknown' && (
+            <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide bg-orange-100 text-orange-700 border border-orange-200">
+              {selectedEndpoint.family}
+            </span>
+          )}
+          {selectedEndpoint.outputType && (
+            <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide bg-teal-100 text-teal-700 border border-teal-200">
+              Out: {selectedEndpoint.outputType}
+            </span>
+          )}
+          {selectedEndpoint.implementationStatus === 'ui_ready' && (
+            <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide bg-green-100 text-green-700 border border-green-200">
+              UI Ready
+            </span>
+          )}
+          {selectedEndpoint.implementationStatus === 'mock_only' && (
+            <span className="px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide bg-purple-100 text-purple-700 border border-purple-200">
+              Mock Only
+            </span>
+          )}
         </div>
+
+        {selectedEndpoint.capabilities && (
+          <>
+            <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Capabilities</div>
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(selectedEndpoint.capabilities).map(([key, value]) => {
+                if (!value) return null;
+                const label = key.replace('supports', '').replace(/([A-Z])/g, ' $1').trim();
+                return (
+                  <span key={key} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[0.6rem] font-medium">
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {!isKeyUsable && (
@@ -88,7 +129,7 @@ export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, sel
 
       <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Payload JSON</div>
       <pre className="bg-[#1e293b] text-[#e2e8f0] p-4 rounded-lg font-mono text-[0.75rem] mb-4 overflow-y-auto whitespace-pre-wrap custom-scrollbar max-h-48">
-        {samplePayload}
+        {payloadString}
       </pre>
 
       <div className="grid grid-cols-2 gap-2 mb-4">

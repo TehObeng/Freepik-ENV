@@ -40,13 +40,18 @@ export const EndpointRow: React.FC<EndpointRowProps> = ({ endpoint, isSelected, 
         <span className={`px-1.5 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wide ${getCategoryColor()}`}>
           {endpoint.category}
         </span>
+        {endpoint.inputMode && (
+          <span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wide bg-slate-200 text-slate-700">
+            {endpoint.inputMode.replace('_', ' ')}
+          </span>
+        )}
         {endpoint.implementationStatus === 'mock_only' && (
-          <span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wide bg-slate-200 text-slate-600 ml-auto">
+          <span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wide bg-purple-100 text-purple-700 ml-auto">
             Mock Only
           </span>
         )}
         {endpoint.implementationStatus === 'ui_ready' && (
-          <span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wide bg-blue-100 text-blue-700 ml-auto">
+          <span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wide bg-green-100 text-green-700 ml-auto">
             UI Ready
           </span>
         )}

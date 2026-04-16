@@ -49,9 +49,9 @@ export const SEED_API_KEYS: ApiKey[] = [
 
 export const SEED_ENDPOINTS: Endpoint[] = [
   // IMAGE
-  { id: 'img-1', name: 'Mystic', path: '/v1/ai/mystic', method: 'POST', category: 'image', note: 'High quality image generation', implementationStatus: 'mock_only' },
-  { id: 'img-2', name: 'Classic Fast', path: '/v1/ai/text-to-image', method: 'POST', category: 'image', note: 'Standard fast generation', implementationStatus: 'mock_only' },
-  { id: 'img-3', name: 'Flux Kontext Pro', path: '/v1/ai/text-to-image/flux-kontext-pro', method: 'POST', category: 'image', note: 'Flux Kontext Pro model', implementationStatus: 'mock_only' },
+  { id: 'img-1', name: 'Mystic', path: '/v1/ai/mystic', method: 'POST', category: 'image', note: 'High quality image generation', implementationStatus: 'mock_only', inputMode: 'text_to_image', outputType: 'image' },
+  { id: 'img-2', name: 'Classic Fast', path: '/v1/ai/text-to-image', method: 'POST', category: 'image', note: 'Standard fast generation', implementationStatus: 'mock_only', inputMode: 'text_to_image', outputType: 'image' },
+  { id: 'img-3', name: 'Flux Kontext Pro', path: '/v1/ai/text-to-image/flux-kontext-pro', method: 'POST', category: 'image', note: 'Flux Kontext Pro model', implementationStatus: 'mock_only', inputMode: 'text_to_image', outputType: 'image', family: 'flux' },
   { id: 'img-4', name: 'Flux 2 Pro', path: '/v1/ai/text-to-image/flux-2-pro', method: 'POST', category: 'image', note: 'Flux 2 Pro model', implementationStatus: 'mock_only' },
   { id: 'img-5', name: 'Flux 2 Turbo', path: '/v1/ai/text-to-image/flux-2-turbo', method: 'POST', category: 'image', note: 'Flux 2 Turbo model', implementationStatus: 'mock_only' },
   { id: 'img-6', name: 'Flux Pro 1.1', path: '/v1/ai/text-to-image/flux-pro-v1-1', method: 'POST', category: 'image', note: 'Flux Pro v1.1', implementationStatus: 'mock_only' },
