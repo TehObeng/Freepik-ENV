@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Endpoint } from '../types';
-import { Image as ImageIcon, Video, Music, FileText, Settings2, SlidersHorizontal, Mic, UploadCloud, Loader2, Download, RotateCcw, CheckCircle2, Info } from 'lucide-react';
+import { Image as ImageIcon, Video, Music, FileText, Settings2, SlidersHorizontal, Mic, UploadCloud, Loader2, Download, RotateCcw, CheckCircle2, Info, HelpCircle, ChevronDown, ChevronRight, BookOpen } from 'lucide-react';
 import { PlaygroundFormState } from '../config/payloadBuilders';
 import { MockResponse } from '../config/mockResponseFactory';
+import { PRESETS } from '../config/presets';
 
 interface ModelPlaygroundProps {
   selectedEndpoint: Endpoint | null;
@@ -23,6 +24,9 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
   setFormState,
   onReset
 }) => {
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
+
   if (!selectedEndpoint) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
@@ -37,10 +41,21 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
   const config = selectedEndpoint.config;
   const fields = config?.fields || [];
 
-  const mainFields = fields.filter(f => f.group === 'main');
-  const mediaFields = fields.filter(f => f.group === 'media');
-  const settingsFields = fields.filter(f => f.group === 'settings');
-  const tuningFields = fields.filter(f => f.group === 'tuning');
+  const visibleFields = isAdvancedMode ? fields : fields.filter(f => !f.advanced);
+
+  const mainFields = visibleFields.filter(f => f.group === 'main');
+  const mediaFields = visibleFields.filter(f => f.group === 'media');
+  const settingsFields = visibleFields.filter(f => f.group === 'settings');
+  const tuningFields = visibleFields.filter(f => f.group === 'tuning');
+
+  const handlePresetSelect = (presetId: string) => {
+    if (!presetId || !selectedEndpoint.inputMode) return;
+    const modePresets = PRESETS[selectedEndpoint.inputMode] || [];
+    const preset = modePresets.find(p => p.id === presetId);
+    if (preset) {
+      setFormState(prev => ({ ...prev, ...preset.values }));
+    }
+  };
 
   const renderField = (field: any) => {
     const value = formState[field.key] !== undefined ? formState[field.key] : field.defaultValue;
@@ -50,8 +65,9 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
       case 'textarea':
         return (
           <div key={field.key}>
-            <label className="block text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2">
+            <label className="flex items-center gap-1.5 text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2">
               {field.label} {field.required && <span className="text-red-500">*</span>}
+              {field.helpText && <FieldTooltip text={field.helpText} />}
             </label>
             <textarea 
               className="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none h-24 bg-slate-50" 
@@ -59,14 +75,14 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
             />
-            {field.helpText && <div className="text-[0.65rem] text-slate-400 mt-1">{field.helpText}</div>}
           </div>
         );
       case 'text':
         return (
           <div key={field.key}>
-            <label className="block text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2">
+            <label className="flex items-center gap-1.5 text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2">
               {field.label} {field.required && <span className="text-red-500">*</span>}
+              {field.helpText && <FieldTooltip text={field.helpText} />}
             </label>
             <input 
               type="text"
@@ -75,13 +91,15 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
               value={value || ''}
               onChange={(e) => onChange(e.target.value)}
             />
-            {field.helpText && <div className="text-[0.65rem] text-slate-400 mt-1">{field.helpText}</div>}
           </div>
         );
       case 'number':
         return (
           <div key={field.key}>
-            <div className="text-xs font-semibold text-slate-700 mb-1">{field.label}</div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
+              {field.label}
+              {field.helpText && <FieldTooltip text={field.helpText} />}
+            </div>
             <input 
               type="number" 
               placeholder={field.placeholder} 
@@ -89,13 +107,15 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
               value={value ?? ''}
               onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
             />
-            {field.helpText && <div className="text-[0.65rem] text-slate-400 mt-1">{field.helpText}</div>}
           </div>
         );
       case 'select':
         return (
           <div key={field.key}>
-            <div className="text-xs font-semibold text-slate-700 mb-1">{field.label}</div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 mb-1">
+              {field.label}
+              {field.helpText && <FieldTooltip text={field.helpText} />}
+            </div>
             <select 
               className="w-full bg-white border border-slate-200 rounded-md p-2 text-sm outline-none font-medium text-slate-700 focus:ring-2 focus:ring-blue-500"
               value={value || ''}
@@ -105,7 +125,6 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
                 <option key={opt.value || opt} value={opt.value || opt}>{opt.label || opt}</option>
               ))}
             </select>
-            {field.helpText && <div className="text-[0.65rem] text-slate-400 mt-1">{field.helpText}</div>}
           </div>
         );
       case 'slider':
@@ -132,7 +151,10 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
               checked={value || false}
               onChange={(e) => onChange(e.target.checked)}
             />
-            <span className="text-xs font-semibold text-slate-700">{field.label}</span>
+            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              {field.label}
+              {field.helpText && <FieldTooltip text={field.helpText} />}
+            </span>
           </label>
         );
       case 'file_placeholder':
@@ -228,10 +250,76 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
               </span>
             );
           })}
+          <button 
+            onClick={() => setShowDocs(!showDocs)}
+            className="ml-auto flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
+          >
+            <BookOpen size={14} />
+            {showDocs ? 'Hide Details' : 'Model Details'}
+          </button>
         </div>
       </div>
 
+      {showDocs && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
+          <h3 className="text-sm font-bold text-slate-800 mb-2">Model Documentation</h3>
+          <p className="text-xs text-slate-600 mb-3">{selectedEndpoint.note}</p>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <span className="font-semibold text-slate-700">Input Mode:</span> <span className="text-slate-600">{selectedEndpoint.inputMode}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-slate-700">Output Type:</span> <span className="text-slate-600">{selectedEndpoint.outputType}</span>
+            </div>
+            {selectedEndpoint.family && (
+              <div>
+                <span className="font-semibold text-slate-700">Family:</span> <span className="text-slate-600">{selectedEndpoint.family}</span>
+              </div>
+            )}
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+            <a href="#" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+              View official API docs <ChevronRight size={12} />
+            </a>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {selectedEndpoint.inputMode && PRESETS[selectedEndpoint.inputMode] && PRESETS[selectedEndpoint.inputMode].length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-600">Preset:</span>
+                <select 
+                  className="bg-white border border-slate-200 rounded-md px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => handlePresetSelect(e.target.value)}
+                  defaultValue=""
+                >
+                  <option value="" disabled>Select a preset...</option>
+                  {PRESETS[selectedEndpoint.inputMode].map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center bg-slate-200/50 rounded-lg p-0.5">
+            <button
+              onClick={() => setIsAdvancedMode(false)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${!isAdvancedMode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Simple
+            </button>
+            <button
+              onClick={() => setIsAdvancedMode(true)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${isAdvancedMode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Advanced
+            </button>
+          </div>
+        </div>
+
         <div className="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-6">
           
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2">
@@ -324,6 +412,21 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({
   );
 }
 
+const FieldTooltip = ({ text }: { text: string }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative flex items-center" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <HelpCircle size={12} className="text-slate-400 hover:text-blue-500 cursor-help transition-colors" />
+      {show && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[0.65rem] rounded shadow-lg z-50 pointer-events-none text-center leading-relaxed">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const UploadBox = ({ icon, label, helpText }: { icon: React.ReactNode, label: string, helpText?: string }) => (
   <div 
     className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-slate-500 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 cursor-pointer transition-colors gap-2 h-24 text-center"
@@ -339,7 +442,10 @@ const SliderControl = ({ label, value, min = 0, max = 100, step = 1, unit = '%',
   return (
     <div className="mb-3">
       <div className="flex justify-between items-center mb-1">
-        <label className="text-xs font-semibold text-slate-700">{label}</label>
+        <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+          {label}
+          {helpText && <FieldTooltip text={helpText} />}
+        </label>
         <span className="text-xs text-slate-500 font-mono">{value}{unit}</span>
       </div>
       <input 
@@ -351,7 +457,6 @@ const SliderControl = ({ label, value, min = 0, max = 100, step = 1, unit = '%',
         onChange={(e) => onChange && onChange(Number(e.target.value))}
         className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
       />
-      {helpText && <div className="text-[0.65rem] text-slate-400 mt-1 leading-tight">{helpText}</div>}
     </div>
   );
 };

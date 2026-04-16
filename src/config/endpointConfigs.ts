@@ -126,9 +126,11 @@ export const getEndpointConfig = (endpoint: any, inputMode?: InputMode, family?:
 
   // Endpoint-level overrides
   if (endpoint.path.includes('mystic')) {
-    // Mystic might have specific defaults or extra fields
+    // Mystic might not support negative prompts
+    fields = fields.filter(f => f.key !== 'negative_prompt');
   } else if (endpoint.path.includes('seedream-v5-lite')) {
-    // Seedream v5 lite might not support certain fields
+    // Seedream v5 lite might ignore guidance_scale
+    fields = fields.filter(f => f.key !== 'guidance_scale');
   }
 
   return { fields };

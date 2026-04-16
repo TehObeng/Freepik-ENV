@@ -7,6 +7,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'textarea',
     required: true,
     placeholder: 'Describe what you want to generate...',
+    helpText: 'The main text description of what you want the AI to create. Be as descriptive as possible.',
     group: 'main'
   },
   text: {
@@ -15,6 +16,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'textarea',
     required: true,
     placeholder: 'Enter text to be spoken...',
+    helpText: 'The text script that will be converted into speech.',
     group: 'main'
   },
   additional_prompt: {
@@ -22,14 +24,18 @@ export const FIELDS: Record<string, FieldDefinition> = {
     label: 'Additional Prompt',
     type: 'textarea',
     placeholder: 'Any additional instructions...',
-    group: 'main'
+    helpText: 'Extra details or instructions to guide the generation process.',
+    group: 'main',
+    advanced: true
   },
   negative_prompt: {
     key: 'negative_prompt',
     label: 'Negative Prompt',
     type: 'textarea',
     placeholder: 'What to exclude...',
-    group: 'main'
+    helpText: 'Specify elements you do NOT want to appear in the generated output.',
+    group: 'main',
+    advanced: true
   },
   image: {
     key: 'image',
@@ -77,6 +83,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['16:9 (Landscape)', '1:1 (Square)', '9:16 (Portrait)', '21:9 (Cinematic)'],
     defaultValue: '16:9 (Landscape)',
+    helpText: 'The proportional relationship between the width and height of the output.',
     group: 'settings'
   },
   duration: {
@@ -85,6 +92,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['5 Seconds', '10 Seconds'],
     defaultValue: '5 Seconds',
+    helpText: 'The length of the generated video or audio.',
     group: 'settings'
   },
   frame_rate: {
@@ -93,7 +101,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['24 FPS (Cinematic)', '30 FPS (Standard)', '60 FPS (Smooth)'],
     defaultValue: '24 FPS (Cinematic)',
-    group: 'settings'
+    helpText: 'Frames per second. Higher values result in smoother motion.',
+    group: 'settings',
+    advanced: true
   },
   voice: {
     key: 'voice',
@@ -101,6 +111,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['Rachel (American, Calm)', 'Drew (American, News)', 'Clyde (American, War veteran)', 'Mimi (British, Childish)'],
     defaultValue: 'Rachel (American, Calm)',
+    helpText: 'The synthetic voice model to use for text-to-speech generation.',
     group: 'settings'
   },
   output_format_audio: {
@@ -109,7 +120,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['mp3_44100_128', 'mp3_44100_192', 'pcm_16000', 'pcm_24000'],
     defaultValue: 'mp3_44100_128',
-    group: 'settings'
+    helpText: 'The audio encoding format and sample rate.',
+    group: 'settings',
+    advanced: true
   },
   output_format_image: {
     key: 'output_format',
@@ -117,7 +130,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['PNG (Transparent)', 'JPEG (Optimized)', 'WebP'],
     defaultValue: 'PNG (Transparent)',
-    group: 'settings'
+    helpText: 'The file format for the generated image.',
+    group: 'settings',
+    advanced: true
   },
   operation_mode: {
     key: 'operation_mode',
@@ -125,6 +140,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['Auto-detect', 'Upscale 2x', 'Upscale 4x', 'Remove Background'],
     defaultValue: 'Auto-detect',
+    helpText: 'The specific enhancement operation to perform on the input image.',
     group: 'settings'
   },
   upscale_factor: {
@@ -133,6 +149,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'select',
     options: ['2x', '4x', '8x'],
     defaultValue: '2x',
+    helpText: 'Multiplier for increasing the resolution of the image.',
     group: 'settings'
   },
   num_images: {
@@ -143,6 +160,7 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 4,
     step: 1,
     defaultValue: 1,
+    helpText: 'How many variations to generate in a single request.',
     group: 'settings'
   },
   guidance_scale: {
@@ -153,7 +171,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 20,
     step: 0.1,
     defaultValue: 7.5,
-    group: 'settings'
+    helpText: 'How strictly the AI should follow your prompt. Higher values force stricter adherence but may reduce creativity.',
+    group: 'settings',
+    advanced: true
   },
   style_strength: {
     key: 'style_strength',
@@ -164,7 +184,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     step: 1,
     unit: '%',
     defaultValue: 50,
-    group: 'settings'
+    helpText: 'How strongly to apply the selected style or reference image to the output.',
+    group: 'settings',
+    advanced: true
   },
   creativity: {
     key: 'creativity',
@@ -174,9 +196,10 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 100,
     step: 1,
     unit: '%',
-    helpText: 'How much new detail to hallucinate.',
+    helpText: 'How much new detail the AI is allowed to hallucinate or invent.',
     defaultValue: 30,
-    group: 'tuning'
+    group: 'tuning',
+    advanced: true
   },
   hdr: {
     key: 'hdr',
@@ -186,16 +209,19 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 100,
     step: 1,
     unit: '%',
-    helpText: 'Enhance lighting and contrast.',
+    helpText: 'Enhance lighting, contrast, and dynamic range in the output.',
     defaultValue: 50,
-    group: 'tuning'
+    group: 'tuning',
+    advanced: true
   },
   seamless_loop: {
     key: 'seamless_loop',
     label: 'Seamless Loop',
     type: 'toggle',
     defaultValue: false,
-    group: 'settings'
+    helpText: 'Ensure the end of the video or audio seamlessly transitions back to the beginning.',
+    group: 'settings',
+    advanced: true
   },
   seed: {
     key: 'seed',
@@ -203,7 +229,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     type: 'number',
     placeholder: 'Random (-1)',
     defaultValue: '',
-    group: 'settings'
+    helpText: 'A specific number to initialize the generation. Using the same seed and prompt will produce identical results.',
+    group: 'settings',
+    advanced: true
   },
   horizontal_pan: {
     key: 'horizontal_pan',
@@ -213,7 +241,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 10,
     step: 1,
     defaultValue: 0,
-    group: 'settings'
+    helpText: 'Simulate camera panning left (negative) or right (positive).',
+    group: 'settings',
+    advanced: true
   },
   vertical_tilt: {
     key: 'vertical_tilt',
@@ -223,7 +253,9 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 10,
     step: 1,
     defaultValue: 0,
-    group: 'settings'
+    helpText: 'Simulate camera tilting down (negative) or up (positive).',
+    group: 'settings',
+    advanced: true
   },
   zoom: {
     key: 'zoom',
@@ -233,6 +265,8 @@ export const FIELDS: Record<string, FieldDefinition> = {
     max: 10,
     step: 1,
     defaultValue: 0,
-    group: 'settings'
+    helpText: 'Simulate camera zooming out (negative) or in (positive).',
+    group: 'settings',
+    advanced: true
   }
 };

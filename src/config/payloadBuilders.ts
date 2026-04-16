@@ -29,14 +29,20 @@ export const buildPayloadFromForm = (endpoint: Endpoint, state: PlaygroundFormSt
     }
 
     // Special mappings
-    if (field.key === 'aspect_ratio' || field.key === 'voice' || field.key === 'output_format') {
+    if (field.key === 'aspect_ratio') {
+      payload[field.key] = typeof value === 'string' ? value.split(' ')[0] : value;
+    } else if (field.key === 'voice' || field.key === 'output_format') {
       payload[field.key] = typeof value === 'string' ? value.split(' ')[0].toLowerCase() : value;
-    } else if (field.key === 'duration' || field.key === 'frame_rate' || field.key === 'upscale_factor') {
-      payload[field.key] = parseInt(value);
+    } else if (field.key === 'duration') {
+      payload[field.key] = typeof value === 'string' ? parseInt(value.replace(/[^0-9]/g, ''), 10) : value;
+    } else if (field.key === 'frame_rate') {
+      payload[field.key] = typeof value === 'string' ? parseInt(value.replace(/[^0-9]/g, ''), 10) : value;
+    } else if (field.key === 'upscale_factor') {
+      payload[field.key] = typeof value === 'string' ? parseInt(value.replace(/[^0-9]/g, ''), 10) : value;
     } else if (field.key === 'style_strength' || field.key === 'creativity' || field.key === 'hdr') {
       payload[field.key] = value / 100;
     } else if (field.key === 'operation_mode') {
-      payload[field.key] = typeof value === 'string' ? value.toLowerCase().replace(' ', '_') : value;
+      payload[field.key] = typeof value === 'string' ? value.toLowerCase().replace(/ /g, '_') : value;
     } else if (['horizontal_pan', 'vertical_tilt', 'zoom'].includes(field.key)) {
       if (!payload.camera_motion) payload.camera_motion = {};
       payload.camera_motion[field.key] = value;

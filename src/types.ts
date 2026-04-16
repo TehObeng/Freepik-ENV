@@ -64,6 +64,14 @@ export interface FieldDefinition {
   unit?: string;
   group?: 'main' | 'media' | 'settings' | 'tuning';
   icon?: string;
+  advanced?: boolean;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  description?: string;
+  values: Record<string, any>;
 }
 
 export interface EndpointConfig {
@@ -113,6 +121,8 @@ export interface RequestHistoryItem {
   keyName: string;
   payload: any;
   formState: any;
+  presetId?: string;
+  isAdvancedMode?: boolean;
   status: 'COMPLETED' | 'FAILED';
   mockOutputUrl?: string;
   mockResult?: any;

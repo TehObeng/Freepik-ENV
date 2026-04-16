@@ -46,6 +46,7 @@ export default function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<EndpointCategory>('all');
+  const [historyFilter, setHistoryFilter] = useState('');
   
   const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,6 +57,8 @@ export default function App() {
   const [requestHistory, setRequestHistory] = useState<RequestHistoryItem[]>([]);
   
   const [formState, setFormState] = useState<PlaygroundFormState>({});
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('');
 
   // Load from localStorage or seed
   useEffect(() => {
@@ -365,11 +368,16 @@ export default function App() {
             generatedResult={generatedResult}
             formState={formState}
             setFormState={setFormState}
+            isAdvancedMode={isAdvancedMode}
+            setIsAdvancedMode={setIsAdvancedMode}
+            selectedPresetId={selectedPresetId}
+            setSelectedPresetId={setSelectedPresetId}
             onReset={() => {
               if (selectedEndpoint) {
                 setFormState(getDefaultFormState(selectedEndpoint));
               }
               setGeneratedResult(null);
+              setSelectedPresetId('');
             }}
           />
         </section>
@@ -401,44 +409,64 @@ export default function App() {
                     Clear
                   </button>
                 </div>
+                <input 
+                  type="text" 
+                  placeholder="Filter history..." 
+                  value={historyFilter}
+                  onChange={(e) => setHistoryFilter(e.target.value)}
+                  className="w-full text-xs p-1.5 mb-2 border border-slate-200 rounded outline-none focus:border-blue-400"
+                />
                 <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
-                  {requestHistory.map(item => (
-                    <div 
-                      key={item.id} 
-                      className="bg-white border border-slate-200 rounded p-2 cursor-pointer hover:border-blue-300 transition-colors"
-                      onClick={() => {
-                        setSelectedEndpointId(item.endpointId);
-                        setFormState(item.formState);
-                        setGeneratedResult({
-                          request_id: item.id,
-                          endpoint_name: item.endpointName,
-                          endpoint_path: item.path || '',
-                          input_mode: item.inputMode,
-                          output_type: item.outputType,
-                          selected_key_name: item.keyName,
-                          status: item.status,
-                          submitted_at: item.timestamp,
-                          payload_snapshot: item.payload,
-                          mock_output_url: item.mockOutputUrl,
-                          mock_result: item.mockResult,
-                          credits_used: 1
-                        });
-                        addLog('info', `Restored request settings for ${item.endpointName}`);
-                      }}
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-xs font-semibold text-slate-800 truncate pr-2">{item.endpointName}</span>
-                        <span className="text-[0.6rem] text-slate-400 shrink-0">{item.timestamp}</span>
-                      </div>
-                      <div className="text-[0.65rem] text-slate-500 truncate mb-1">
-                        {item.payload.prompt || item.payload.text || item.payload.additional_prompt || 'No prompt'}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[0.6rem] font-medium text-slate-400">{item.keyName}</span>
-                        <span className="text-[0.6rem] font-bold text-green-600">COMPLETED</span>
-                      </div>
-                    </div>
-                  ))}
+                  {requestHistory
+                    .filter(item => 
+                      item.endpointName.toLowerCase().includes(historyFilter.toLowerCase()) || 
+                      (item.payload.prompt && item.payload.prompt.toLowerCase().includes(historyFilter.toLowerCase())) ||
+                      (item.payload.text && item.payload.text.toLowerCase().includes(historyFilter.toLowerCase()))
+                    )
+                    .map(item => {
+                      const payloadSummary = item.payload.prompt || item.payload.text || item.payload.additional_prompt || JSON.stringify(item.payload);
+                      const shortSummary = payloadSummary.length > 40 ? payloadSummary.substring(0, 40) + '...' : payloadSummary;
+                      
+                      return (
+                        <div 
+                          key={item.id} 
+                          className="bg-white border border-slate-200 rounded p-2 cursor-pointer hover:border-blue-300 transition-colors"
+                          onClick={() => {
+                            setSelectedEndpointId(item.endpointId);
+                            setFormState(item.formState);
+                            setIsAdvancedMode(item.isAdvancedMode || false);
+                            setSelectedPresetId(item.presetId || '');
+                            setGeneratedResult({
+                              request_id: item.id,
+                              endpoint_name: item.endpointName,
+                              endpoint_path: item.path || '',
+                              input_mode: item.inputMode,
+                              output_type: item.outputType,
+                              selected_key_name: item.keyName,
+                              status: item.status,
+                              submitted_at: item.timestamp,
+                              payload_snapshot: item.payload,
+                              mock_output_url: item.mockOutputUrl,
+                              mock_result: item.mockResult,
+                              credits_used: 1
+                            });
+                            addLog('info', `Restored request settings for ${item.endpointName}`);
+                          }}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-xs font-semibold text-slate-800 truncate pr-2">{item.endpointName}</span>
+                            <span className="text-[0.6rem] text-slate-400 shrink-0">{item.timestamp}</span>
+                          </div>
+                          <div className="text-[0.65rem] text-slate-500 truncate mb-1" title={payloadSummary}>
+                            {shortSummary}
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[0.6rem] font-medium text-slate-400">{item.keyName}</span>
+                            <span className="text-[0.6rem] font-bold text-green-600">COMPLETED</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             )}
