@@ -15,11 +15,15 @@ export const CompactKeyCard: React.FC<{
   return (
     <div
       onClick={() => isSelectable && onSelect(apiKey.id)}
-      className={`group flex items-center gap-3 px-3 py-2 border rounded-lg cursor-pointer transition-all shrink-0 ${
+      className={`group flex items-center gap-3 px-3 py-2 border rounded-lg transition-all shrink-0 ${
+        !isSelectable ? 'cursor-not-allowed opacity-50 bg-slate-50' : 'cursor-pointer'
+      } ${
         apiKey.selected
           ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
+          : apiKey.status === 'exhausted'
+          ? 'border-red-300 bg-red-50 hover:border-red-400'
           : 'border-slate-200 bg-white hover:border-blue-400'
-      } ${!isSelectable ? 'opacity-60' : ''}`}
+      }`}
     >
       <div>
         <div className="font-semibold text-[0.8rem] text-slate-900 leading-tight">{apiKey.name}</div>

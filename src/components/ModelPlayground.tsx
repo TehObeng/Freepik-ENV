@@ -311,24 +311,49 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({ selectedEndpoi
           {generatedResult && (
             <div className="mt-8 pt-6 border-t border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide">Generated Output</h3>
+                <h3 className="text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide">Mock Response</h3>
                 <button className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium bg-blue-50 px-3 py-1.5 rounded-md transition-colors">
                   <Download size={14} /> Download
                 </button>
               </div>
-              <div className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center min-h-[300px] relative group p-4">
-                {generatedResult.type === 'image' || generatedResult.type === 'utility' ? (
-                  <img src={generatedResult.url} alt="Generated" className="max-w-full max-h-[500px] object-contain rounded-lg shadow-sm" referrerPolicy="no-referrer" />
-                ) : generatedResult.type === 'video' ? (
-                  <video src={generatedResult.url} controls autoPlay loop className="max-w-full max-h-[500px] bg-black rounded-lg shadow-sm" />
-                ) : generatedResult.type === 'audio' ? (
-                  <div className="w-full max-w-md p-8 flex flex-col items-center gap-6 bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shadow-inner">
-                      <Music size={32} />
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="text-[0.65rem] text-slate-500 uppercase font-bold tracking-wide mb-1">Task ID</div>
+                  <div className="text-xs font-mono text-slate-700">mock_task_{Math.random().toString(36).substring(7)}</div>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="text-[0.65rem] text-slate-500 uppercase font-bold tracking-wide mb-1">Status</div>
+                  <div className="text-xs font-semibold text-green-600">COMPLETED</div>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="text-[0.65rem] text-slate-500 uppercase font-bold tracking-wide mb-1">Endpoint</div>
+                  <div className="text-xs font-medium text-slate-700 truncate" title={selectedEndpoint.name}>{selectedEndpoint.name}</div>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <div className="text-[0.65rem] text-slate-500 uppercase font-bold tracking-wide mb-1">Generated</div>
+                  <div className="text-xs font-medium text-slate-700">{new Date().toLocaleTimeString()}</div>
+                </div>
+              </div>
+
+              <div className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex flex-col min-h-[300px] relative group">
+                <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded text-[0.65rem] font-bold uppercase tracking-wide">
+                  Demo Output Preview
+                </div>
+                <div className="flex-1 flex items-center justify-center p-4">
+                  {generatedResult.type === 'image' || generatedResult.type === 'utility' ? (
+                    <img src={generatedResult.url} alt="Generated" className="max-w-full max-h-[500px] object-contain rounded-lg shadow-sm" referrerPolicy="no-referrer" />
+                  ) : generatedResult.type === 'video' ? (
+                    <video src={generatedResult.url} controls autoPlay loop className="max-w-full max-h-[500px] bg-black rounded-lg shadow-sm" />
+                  ) : generatedResult.type === 'audio' ? (
+                    <div className="w-full max-w-md p-8 flex flex-col items-center gap-6 bg-white rounded-xl shadow-sm border border-slate-200">
+                      <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shadow-inner">
+                        <Music size={32} />
+                      </div>
+                      <audio src={generatedResult.url} controls className="w-full" />
                     </div>
-                    <audio src={generatedResult.url} controls className="w-full" />
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </div>
           )}
@@ -347,7 +372,7 @@ export const ModelPlayground: React.FC<ModelPlaygroundProps> = ({ selectedEndpoi
             }`}
           >
             {isGenerating && <Loader2 size={18} className="animate-spin" />}
-            {isGenerating ? 'Generating...' : 'Generate Output'}
+            {isGenerating ? 'Simulating...' : 'Simulate Request'}
           </button>
         </div>
       </div>

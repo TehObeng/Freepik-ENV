@@ -53,7 +53,12 @@ export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, sel
   };
 
   return (
-    <div className="flex flex-col h-full p-3">
+    <div className="flex flex-col h-full">
+      <div className="bg-[#f8fafc] border border-blue-200 text-blue-800 p-3 rounded-md text-[0.75rem] mb-4">
+        <strong className="block mb-1 text-blue-900">Simulated Request Preview</strong>
+        This panel previews how a request may look, but does not send real Freepik API requests yet.
+      </div>
+
       <div className="bg-slate-100 rounded-lg p-4 mb-4">
         <div className="text-[0.7rem] uppercase text-slate-500 mb-0.5 tracking-wide">Target Endpoint</div>
         <div className="text-[0.875rem] font-semibold text-slate-900 mb-3">{selectedEndpoint.name}</div>
@@ -91,13 +96,13 @@ export const RequestPreview: React.FC<RequestPreviewProps> = ({ selectedKey, sel
           onClick={() => handleCopy(curlCommand, setCopiedCurl)}
           className="w-full p-2 rounded-md font-semibold text-xs bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-colors"
         >
-          {copiedCurl ? 'Copied!' : 'Copy Curl'}
+          {copiedCurl ? 'Copied!' : 'Copy Curl Template'}
         </button>
         <button
           onClick={() => handleCopy(fullUrl, setCopiedEndpoint)}
           className="w-full p-2 rounded-md font-semibold text-xs bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-colors"
         >
-          {copiedEndpoint ? 'Copied!' : 'Copy Path'}
+          {copiedEndpoint ? 'Copied!' : 'Copy Endpoint'}
         </button>
       </div>
 

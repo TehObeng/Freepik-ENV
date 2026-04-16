@@ -7,7 +7,7 @@ import { DashboardStats } from './components/DashboardStats';
 import { RequestPreview } from './components/RequestPreview';
 import { CompactKeyCard } from './components/CompactKeyCard';
 import { ModelPlayground } from './components/ModelPlayground';
-import { Plus } from 'lucide-react';
+import { Plus, Info, AlertTriangle, ShieldCheck, Database, Server, Compass, CheckCircle2 } from 'lucide-react';
 
 export interface LogEntry {
   id: string;
@@ -104,12 +104,17 @@ export default function App() {
   };
 
   const handleSelectKey = (id: string) => {
+    const key = keys.find(k => k.id === id);
+    if (!key || key.status === 'disabled') return;
+    
     setKeys(keys.map(k => ({
       ...k,
       selected: k.id === id
     })));
-    const keyName = keys.find(k => k.id === id)?.name;
-    addLog('info', `Switched active API key to ${keyName}`);
+    addLog('info', `Switched active API key to ${key.name}`);
+    if (key.status === 'exhausted') {
+      addLog('warning', `Selected key ${key.name} is exhausted. Requests will fail.`);
+    }
   };
 
   const handleSelectEndpoint = (id: string) => {
@@ -187,16 +192,35 @@ export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#f8fafc] text-[#0f172a] font-sans">
       <header className="h-14 bg-white border-b border-[#e2e8f0] flex items-center justify-between px-6 shrink-0">
-        <div className="font-bold text-[1.1rem] text-blue-600 flex items-center gap-2">
-          <span>⚡</span>
-          Freepik API Control
+        <div className="flex items-center gap-4">
+          <div className="font-bold text-[1.1rem] text-blue-600 flex items-center gap-2">
+            <span>⚡</span>
+            Freepik API Playground
+          </div>
+          <div className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[0.65rem] font-bold uppercase tracking-wide rounded-md border border-purple-200">
+            Mock Mode
+          </div>
+          <div className="text-xs text-slate-500 hidden md:block">
+            Curated Freepik endpoint catalog with local API key management and simulated requests.
+          </div>
         </div>
         <DashboardStats {...stats} />
       </header>
 
+      {/* Environment Banner */}
+      <div className="bg-blue-50 border-b border-blue-100 px-6 py-2.5 flex items-center gap-3 shrink-0">
+        <Info size={16} className="text-blue-500 shrink-0" />
+        <div className="text-xs text-blue-800">
+          <strong>Environment Status:</strong> Requests are simulated. API usage numbers are local demo values. Endpoint coverage is curated, not full automatic API discovery. Real Freepik execution is not connected yet.
+        </div>
+      </div>
+
       {/* API Key Top Bar */}
       <div className="h-16 bg-white border-b border-[#e2e8f0] flex items-center px-4 shrink-0 overflow-x-auto custom-scrollbar gap-3">
-        <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-slate-400 mr-2 shrink-0">API Keys</div>
+        <div className="flex flex-col mr-2 shrink-0">
+          <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-slate-700">API Keys</div>
+          <div className="text-[0.6rem] text-slate-400">Local demo values</div>
+        </div>
         {keys.map(key => (
           <CompactKeyCard
             key={key.id}
@@ -271,17 +295,70 @@ export default function App() {
           />
         </section>
 
-        {/* Right: Log */}
+        {/* Right: Log & Info */}
         <section className="w-[360px] flex flex-col border-l border-[#e2e8f0] bg-white shrink-0">
           <div className="p-4 border-b border-[#e2e8f0] flex justify-between items-center shrink-0">
             <span className="text-[0.875rem] font-semibold uppercase tracking-[0.025em] text-[#64748b]">System Log & Preview</span>
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
             <RequestPreview
               selectedKey={selectedKey}
               selectedEndpoint={selectedEndpoint}
               logs={logs}
             />
+            
+            {/* Coverage Card */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <h3 className="text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <Database size={14} /> Endpoint Coverage
+              </h3>
+              <p className="text-[0.7rem] text-slate-600 mb-3 leading-relaxed">
+                This app currently includes a manually maintained list of publicly documented Freepik endpoints. It does not yet auto-sync from Freepik docs or API schema. Some endpoints may be missing.
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-[0.65rem] font-medium text-slate-500">
+                <div className="bg-white px-2 py-1.5 rounded border border-slate-200 flex justify-between">
+                  <span>Total</span><span className="text-slate-900">{endpoints.length}</span>
+                </div>
+                <div className="bg-white px-2 py-1.5 rounded border border-slate-200 flex justify-between">
+                  <span>Image</span><span className="text-slate-900">{endpoints.filter(e => e.category === 'image').length}</span>
+                </div>
+                <div className="bg-white px-2 py-1.5 rounded border border-slate-200 flex justify-between">
+                  <span>Video</span><span className="text-slate-900">{endpoints.filter(e => e.category === 'video').length}</span>
+                </div>
+                <div className="bg-white px-2 py-1.5 rounded border border-slate-200 flex justify-between">
+                  <span>Audio</span><span className="text-slate-900">{endpoints.filter(e => e.category === 'audio').length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Scope & Phases */}
+            <div className="grid grid-cols-1 gap-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <h3 className="text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <CheckCircle2 size={14} className="text-green-600" /> Current Scope
+                </h3>
+                <ul className="text-[0.7rem] text-slate-600 space-y-1.5 list-disc list-inside">
+                  <li>Local API key storage</li>
+                  <li>Curated endpoint browsing</li>
+                  <li>Endpoint search/filter</li>
+                  <li>Request preview</li>
+                  <li>Simulated request flow</li>
+                </ul>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <h3 className="text-[0.75rem] font-bold text-slate-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <Compass size={14} className="text-blue-600" /> Next Phases
+                </h3>
+                <ul className="text-[0.7rem] text-slate-600 space-y-1.5 list-disc list-inside">
+                  <li>Backend proxy for real requests</li>
+                  <li>Real Freepik API execution</li>
+                  <li>Real quota / key health sync</li>
+                  <li>Endpoint catalog sync from docs/schema</li>
+                  <li>Per-endpoint payload forms</li>
+                </ul>
+              </div>
+            </div>
+
           </div>
         </section>
       </main>

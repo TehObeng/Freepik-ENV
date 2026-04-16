@@ -20,4 +20,5 @@ export interface Endpoint {
   method: 'POST';
   category: EndpointCategory;
   note: string;
+  implementationStatus?: 'ui_ready' | 'mock_only' | 'planned';
 }
